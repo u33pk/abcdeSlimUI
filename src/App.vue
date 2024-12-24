@@ -11,7 +11,8 @@
 <script setup>
 import { darkTheme, useOsTheme } from "naive-ui";
 
-const osThemeRef = useOsTheme().value === "dark" ? darkTheme : null;
+// const osThemeRef = useOsTheme().value === "dark" ? darkTheme : null;
+const osThemeRef = useOsTheme().value === "dark" ? useOsTheme : null;
 
 
 const layouts = new Map();

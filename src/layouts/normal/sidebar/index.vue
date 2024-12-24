@@ -1,7 +1,28 @@
 <template>
-  <n-tree class="cus-scroll-y mt-4 h-0 flex-1" block-line expand-on-click key-field="id" :data="data"
-    :node-props="nodeProps" :on-update:expanded-keys="updatePrefixWithExpaned" />
+  <div class="cus-tree-container mt-4 flex-1">
+    <n-tree
+      class="cus-scroll-x"
+      block-line
+      expand-on-click
+      key-field="id"
+      :data="data"
+      :node-props="nodeProps"
+      :on-update:expanded-keys="updatePrefixWithExpaned"
+    />
+  </div>
 </template>
+
+<style scoped>
+.cus-tree-container {
+  width: 100%; /* Adjust based on your layout needs */
+  overflow-x: auto; /* Allow horizontal scrolling */
+}
+
+.cus-scroll-x {
+  min-width: 500px; /* Or adjust based on your content */
+  white-space: nowrap; /* Prevent wrapping */
+}
+</style>
 
 <script setup>
 import {
@@ -89,6 +110,34 @@ const data = [
             label: "test.js",
             type: "file",
             data: "2222222",
+            prefix: () => h(NIcon, null, {
+              default: () => h(FileTrayFullOutline)
+            })
+          }
+        ]
+      },{
+        id: "6",
+        label: "我的文件",
+        type: "folder",
+        data: "",
+        prefix: () => h(NIcon, null, {
+          default: () => h(Folder)
+        }),
+        children: [
+          {
+            id: "7",
+            label: "template.js",
+            type: "file",
+            data: "11111111111",
+            prefix: () => h(NIcon, null, {
+              default: () => h(FileTrayFullOutline)
+            })
+          },
+          {
+            id: "8",
+            label: "test.js",
+            type: "file",
+            data: "admin",
             prefix: () => h(NIcon, null, {
               default: () => h(FileTrayFullOutline)
             })
