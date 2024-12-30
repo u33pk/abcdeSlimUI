@@ -5,7 +5,7 @@
       block-line
       expand-on-click
       key-field="id"
-      :data="data"
+      :data="treeData"
       :node-props="nodeProps"
       :on-update:expanded-keys="updatePrefixWithExpaned"
     />
@@ -25,18 +25,17 @@
 </style>
 
 <script setup>
-import {
-  FileTrayFullOutline,
-  Folder,
-  FolderOpenOutline
-} from "@vicons/ionicons5";
+import { h, ref, onMounted } from "vue";
 import { NIcon } from "naive-ui";
-import { useTabStore } from "@/stores";
+import { FileTrayFullOutline, Folder, FolderOpenOutline } from "@vicons/ionicons5";
+import axios from "axios";  // 引入 axios
 
+// 树形结构的数据
+const treeData = ref([]);
 
+// 更新树的前缀图标
 const updatePrefixWithExpaned = (_keys, _option, meta) => {
-  if (!meta.node)
-    return;
+  if (!meta.node) return;
   switch (meta.action) {
     case "expand":
       meta.node.prefix = () => h(NIcon, null, {
@@ -50,101 +49,65 @@ const updatePrefixWithExpaned = (_keys, _option, meta) => {
       break;
   }
 };
+
 const nodeProps = ({ option }) => {
   return {
     onClick() {
       if (!option.children && !option.disabled) {
-        $message.info(`[Click] ${option.label}`);
-        if (option.type === "file") {
-          useTabStore().addTab({
-            id: option.id,
-            type: option.type,
-            label: option.label,
-            data: option.data,
-          })
-        }
+        console.log(`[Click] ${option.label}`);
       }
     }
   };
-}
-const data = [
-  {
-    id: "1",
-    type: "folder",
-    label: "文件夹",
-    data: "",
-    prefix: () => h(NIcon, null, {
-      default: () => h(Folder)
-    }),
-    children: [
-      {
-        id: "2",
-        label: "空的",
-        type: "folder",
-        data: "",
-        disabled: true,
+};
+
+// 递归解析 JSON 数据并构建树形结构
+const parseJsonToTreeData = (json, parentId = 'root') => {
+  const result = [];
+  Object.keys(json).forEach((key, index) => {
+    const value = json[key];
+    const nodeId = `${parentId}-${index}`;
+
+    // 如果值是对象，则创建一个文件夹节点
+    if (typeof value === 'object' && value !== null) {
+      result.push({
+        id: nodeId,
+        label: key,
+        type: 'folder',
+        children: parseJsonToTreeData(value, nodeId) // 递归处理嵌套的对象
+      });
+    } else {
+      // 如果值是基本类型，则是叶子节点
+      result.push({
+        id: nodeId,
+        label: `${key}: ${value}`,
+        type: "file",
+        data: "2222222",
         prefix: () => h(NIcon, null, {
-          default: () => h(Folder)
+          default: () => h(FileTrayFullOutline)
         })
-      },
-      {
-        id: "3",
-        label: "我的文件",
-        type: "folder",
-        data: "",
-        prefix: () => h(NIcon, null, {
-          default: () => h(Folder)
-        }),
-        children: [
-          {
-            id: "4",
-            label: "template.js",
-            type: "file",
-            data: "11111111111",
-            prefix: () => h(NIcon, null, {
-              default: () => h(FileTrayFullOutline)
-            })
-          },
-          {
-            id: "5",
-            label: "test.js",
-            type: "file",
-            data: "2222222",
-            prefix: () => h(NIcon, null, {
-              default: () => h(FileTrayFullOutline)
-            })
-          }
-        ]
-      },{
-        id: "6",
-        label: "我的文件",
-        type: "folder",
-        data: "",
-        prefix: () => h(NIcon, null, {
-          default: () => h(Folder)
-        }),
-        children: [
-          {
-            id: "7",
-            label: "template.js",
-            type: "file",
-            data: "11111111111",
-            prefix: () => h(NIcon, null, {
-              default: () => h(FileTrayFullOutline)
-            })
-          },
-          {
-            id: "8",
-            label: "test.js",
-            type: "file",
-            data: "admin",
-            prefix: () => h(NIcon, null, {
-              default: () => h(FileTrayFullOutline)
-            })
-          }
-        ]
-      }
-    ]
+      });
+    }
+  });
+  return result;
+};
+
+// 在组件挂载后，通过 HTTP 请求获取数据并初始化树形数据
+onMounted(() => {
+  // 发送请求
+  axios.get("http://127.0.0.1:8080/classes?abc=", {
+  headers: {
+    'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
   }
-]
+})
+    .then(response => {
+      // 打印返回的 JSON 数据
+      console.log("请求返回的数据:", response.data);
+      
+      // 请求成功后，解析获取的 JSON 数据并设置到 treeData 中
+      treeData.value = parseJsonToTreeData(response.data);
+    })
+    .catch(error => {
+      console.error("请求数据失败:", error);
+    });
+});
 </script>

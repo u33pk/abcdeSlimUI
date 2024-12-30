@@ -27,3 +27,10 @@ pnpm dev
 ```sh
 pnpm build
 ```
+
+
+
+## json字符串支持
+```sh
+pnpm add axios
+```
