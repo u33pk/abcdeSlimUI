@@ -58,7 +58,7 @@ const nodeProps = ({ option }) => {
         $message.info(`[Click] ${option.label}`);
         if (option.type === "file") {
           // 发送 HTTP 请求获取数据
-          axios.get(`http://127.0.0.1:8080/method/asm?method=com.qihoo.hms.browser/entry/ets/backupTransfer/DbTransferManager/querySourceCount`)
+          axios.get(`http://127.0.0.1:8080/method/asm?method=`)
             .then(response => {
               // 假设返回的数据在response.data中
               console.log("请求返回的结果:", response.data);
@@ -111,27 +111,11 @@ const parseJsonToTreeData = (json, parentId = 'root', parentPath = '') => {
       });
     } else {
       // 如果值是基本类型，则是叶子节点
-      // 发送 HTTP 请求获取数据
-      axios.get(`http://127.0.0.1:8080/method/asm?method=`)
-            .then(response => {
-              // 假设返回的数据在response.data中
-              console.log("请求返回的结果:", response.data);
-
-              // 在这里处理返回的数据，比如将数据更新到树形节点中
-              // 或者做其他的操作
-              // 例如：将返回的数据保存到节点的数据中
-              reqdata = response.data;
-
-              // 你也可以进一步更新 UI 或者处理数据
-            })
-            .catch(error => {
-              console.error("请求数据失败:", error);
-            });
       result.push({
         id: nodeId, // 使用路径作为节点的 id
         type: "file",
         label: `${nodePath}/${value}`.replace(`/${key}`,"").replace(/^\/+/, ''), // 使用路径 + key + value 作为 label
-        data: reqdata,
+        data: `当前方法为：${nodePath}/${value} 双击可反编译！！！`.replace(`/${key}`,"").replace(/^\/+/, ''),
       });
     }
   });
