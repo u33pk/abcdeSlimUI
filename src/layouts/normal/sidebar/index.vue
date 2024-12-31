@@ -29,6 +29,7 @@ import { h, ref, onMounted } from "vue";
 import { NIcon } from "naive-ui";
 import { FileTrayFullOutline, Folder, FolderOpenOutline } from "@vicons/ionicons5";
 import axios from "axios";  // 引入 axios
+import { useTabStore } from "@/stores"; //对应FileTray
 
 // 树形结构的数据
 const treeData = ref([]);
@@ -54,40 +55,87 @@ const nodeProps = ({ option }) => {
   return {
     onClick() {
       if (!option.children && !option.disabled) {
-        console.log(`[Click] ${option.label}`);
+        $message.info(`[Click] ${option.label}`);
+        if (option.type === "file") {
+          // 发送 HTTP 请求获取数据
+          axios.get(`http://127.0.0.1:8080/method/asm?method=com.qihoo.hms.browser/entry/ets/backupTransfer/DbTransferManager/querySourceCount`)
+            .then(response => {
+              // 假设返回的数据在response.data中
+              console.log("请求返回的结果:", response.data);
+
+              // 在这里处理返回的数据，比如将数据更新到树形节点中
+              // 或者做其他的操作
+              // 例如：将返回的数据保存到节点的数据中
+              option.data = response.data;
+
+              // 你也可以进一步更新 UI 或者处理数据
+            })
+            .catch(error => {
+              console.error("请求数据失败:", error);
+            });
+          useTabStore().addTab({
+            id: option.id,
+            type: option.type,
+            label: option.label,
+            data: option.data,//option.data
+          })
+        }
       }
     }
   };
-};
+}
 
 // 递归解析 JSON 数据并构建树形结构
-const parseJsonToTreeData = (json, parentId = 'root') => {
+const parseJsonToTreeData = (json, parentId = 'root', parentPath = '') => {
   const result = [];
+  
   Object.keys(json).forEach((key, index) => {
     const value = json[key];
     const nodeId = `${parentId}-${index}`;
+    const nodePath = `${parentPath}/${key}`;  // 更新路径，包含当前的 key
+
+    // 如果是 methods 或 fields 且为空，跳过该节点的递归加载
+    if (key === "methods" || key === "fields") {
+      if (!value || value.length === 0) {
+        return; // 如果为空，跳过该节点的处理
+      }
+    }
 
     // 如果值是对象，则创建一个文件夹节点
     if (typeof value === 'object' && value !== null) {
       result.push({
-        id: nodeId,
-        label: key,
+        id: nodeId, // 使用路径作为节点的 id
+        label: key, // 路径作为 label
         type: 'folder',
-        children: parseJsonToTreeData(value, nodeId) // 递归处理嵌套的对象
+        children: parseJsonToTreeData(value, nodeId, nodePath) // 递归处理嵌套的对象
       });
     } else {
       // 如果值是基本类型，则是叶子节点
+      // 发送 HTTP 请求获取数据
+      axios.get(`http://127.0.0.1:8080/method/asm?method=`)
+            .then(response => {
+              // 假设返回的数据在response.data中
+              console.log("请求返回的结果:", response.data);
+
+              // 在这里处理返回的数据，比如将数据更新到树形节点中
+              // 或者做其他的操作
+              // 例如：将返回的数据保存到节点的数据中
+              reqdata = response.data;
+
+              // 你也可以进一步更新 UI 或者处理数据
+            })
+            .catch(error => {
+              console.error("请求数据失败:", error);
+            });
       result.push({
-        id: nodeId,
-        label: `${key}: ${value}`,
+        id: nodeId, // 使用路径作为节点的 id
         type: "file",
-        data: "2222222",
-        prefix: () => h(NIcon, null, {
-          default: () => h(FileTrayFullOutline)
-        })
+        label: `${nodePath}/${value}`.replace(`/${key}`,"").replace(/^\/+/, ''), // 使用路径 + key + value 作为 label
+        data: reqdata,
       });
     }
   });
+  
   return result;
 };
 
@@ -95,19 +143,27 @@ const parseJsonToTreeData = (json, parentId = 'root') => {
 onMounted(() => {
   // 发送请求
   axios.get("http://127.0.0.1:8080/classes?abc=", {
-  headers: {
-    'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
-  }
-})
-    .then(response => {
-      // 打印返回的 JSON 数据
-      console.log("请求返回的数据:", response.data);
-      
-      // 请求成功后，解析获取的 JSON 数据并设置到 treeData 中
-      treeData.value = parseJsonToTreeData(response.data);
-    })
-    .catch(error => {
-      console.error("请求数据失败:", error);
-    });
+    headers: {
+      'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
+    }
+  })
+  .then(response => {
+    // 打印返回的 JSON 数据
+    console.log("请求返回的数据:", response.data);
+    
+    // 请求成功后，解析获取的 JSON 数据并设置到 treeData 中
+    const tree = parseJsonToTreeData(response.data);
+    
+    // 在树形结构的最外层加上一个根节点
+    treeData.value = [{
+      id: "root",
+      label: "test",
+      type: 'folder',
+      children: tree
+    }];
+  })
+  .catch(error => {
+    console.error("请求数据失败:", error);
+  });
 });
 </script>

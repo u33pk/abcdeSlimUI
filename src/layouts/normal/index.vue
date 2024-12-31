@@ -49,7 +49,7 @@ import { FileTray } from '@vicons/ionicons5'
 import SideBar from './sidebar/index.vue'
 import { useTabStore } from "@/stores"
 
-const sidebarWidth = ref(220) // Initial sidebar width
+const sidebarWidth = ref(420) // Initial sidebar width 修改旁边默认宽度
 const isDragging = ref(false)
 
 const id = computed(() => { console.log($store.tab.activeIndex); return $store.tab.activeIndex })
@@ -64,7 +64,7 @@ const startDrag = (e) => {
   const onMouseMove = (e) => {
     if (isDragging.value) {
       const delta = e.clientX - startX
-      sidebarWidth.value = Math.max(64, Math.min(400, startWidth + delta)) // Min width 64px, Max width 400px
+      sidebarWidth.value = Math.max(64, Math.min(800, startWidth + delta)) // Min width 64px, Max width 400px 修改旁边可拉默认宽度
     }
   }
 
