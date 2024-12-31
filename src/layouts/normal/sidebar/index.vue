@@ -58,7 +58,7 @@ const nodeProps = ({ option }) => {
         $message.info(`[Click] ${option.label}`);
         if (option.type === "file") {
           // 发送 HTTP 请求获取数据
-          axios.get(`http://127.0.0.1:8080/method/asm?method=`)
+          axios.get(`http://127.0.0.1:8080/method?method=${option.path}`)
             .then(response => {
               // 假设返回的数据在response.data中
               console.log("请求返回的结果:", response.data);
@@ -75,6 +75,7 @@ const nodeProps = ({ option }) => {
             });
           useTabStore().addTab({
             id: option.id,
+            path: option.path,
             type: option.type,
             label: option.label,
             data: option.data,//option.data
@@ -114,7 +115,8 @@ const parseJsonToTreeData = (json, parentId = 'root', parentPath = '') => {
       result.push({
         id: nodeId, // 使用路径作为节点的 id
         type: "file",
-        label: `${nodePath}/${value}`.replace(`/${key}`,"").replace(/^\/+/, ''), // 使用路径 + key + value 作为 label
+        path: `${nodePath}/${value}`.replace(`/${key}`,"").replace(/^\/+/, '').replace("methods/", ""),
+        label: `${value}`, // 使用路径 + key + value 作为 label
         data: `当前方法为：${nodePath}/${value} 双击可反编译！！！`.replace(`/${key}`,"").replace(/^\/+/, ''),
       });
     }
