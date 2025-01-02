@@ -31,8 +31,12 @@ import { FileTrayFullOutline, Folder, FolderOpenOutline } from "@vicons/ionicons
 import axios from "axios";  // 引入 axios
 import { useTabStore } from "@/stores"; //对应FileTray
 
+
 // 树形结构的数据
 const treeData = ref([]);
+
+
+
 
 // 更新树的前缀图标
 const updatePrefixWithExpaned = (_keys, _option, meta) => {
@@ -124,6 +128,56 @@ const parseJsonToTreeData = (json, parentId = 'root', parentPath = '') => {
   
   return result;
 };
+
+
+// 反编译函数
+const decompile = () => {
+  console.log("反编译功能被调用");
+
+  // 发送第一个请求获取 space/list 的数据
+  axios.get("http://127.0.0.1:8080/space/list")
+    .then(response => {
+      // 获取第一个接口返回的数据
+      const firstResponseData = response.data;
+      console.log("第一个接口返回的数据:", firstResponseData);
+      // 假设第一个接口返回的数据是一个字符串或对象，我们需要提取出 test
+      const test = response.data[0]; // 根据实际返回的数据结构进行调整
+
+      // 发送第二个请求，使用第一个接口返回的数据作为参数
+      return axios.get(`http://127.0.0.1:8080/hap?file=${test}`);
+    })
+    .then(response => {
+      // 获取第二个接口返回的 JSON 数据
+      const secondResponseData = response.data;
+
+      // 在这里处理第二个接口返回的 JSON 数据
+      console.log("第二个接口返回的数据:", secondResponseData);
+      const tree1 = parseJsonToTreeData(response.data);
+    
+    // 在树形结构的最外层加上一个根节点
+    treeData.value = [{
+      id: "root",
+      label: "test",
+      type: 'folder',
+      children: tree1
+    }];
+      // 你可以根据需要对返回的数据进行进一步处理
+      // 例如：将数据更新到树形节点中，或者做其他的操作
+
+      // 提示用户反编译功能已触发
+      alert("反编译功能已触发，数据已获取并处理");
+    })
+    .catch(error => {
+      console.error("请求数据失败:", error);
+      alert("反编译功能触发失败，请检查网络或服务器状态");
+    });
+};
+
+// 暴露函数给父组件
+defineExpose({
+  decompile,
+});
+
 
 // 在组件挂载后，通过 HTTP 请求获取数据并初始化树形数据
 onMounted(() => {
