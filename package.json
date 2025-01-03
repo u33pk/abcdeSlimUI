@@ -22,6 +22,7 @@
     "cm6-theme-basic-dark": "^0.2.0",
     "cm6-theme-material-dark": "^0.2.0",
     "cm6-theme-nord": "^0.2.0",
+    "d3": "^7.9.0",
     "pinia": "^2.2.6",
     "pinia-plugin-persistedstate": "^4.2.0",
     "sass-embedded": "^1.83.0",

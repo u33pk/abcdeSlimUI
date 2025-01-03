@@ -30,7 +30,12 @@ pnpm build
 
 
 
-## json字符串支持
+## json依赖 安装 axios
 ```sh
 pnpm add axios
+```
+
+## cfg依赖 安装 d3
+```sh
+pnpm add d3
 ```

@@ -34,17 +34,42 @@
 
     <!-- Content Area -->
     <article class="w-0 flex flex-col flex-1 h-screen" style="height: calc(100vh - 40px);">
-      <div class="h-screen flex-col" v-if="tabsCount > 0">
-        <AppHeader class="h-60 flex-shrink-0" />
-        <slot />
-      </div>
-      <n-empty class="h-screen mt-15%" v-else description="暂未打开文件">
-        <template #icon>
-          <n-icon>
-            <FileTray />
-          </n-icon>
-        </template>
-      </n-empty>
+      <n-tabs
+        type="line"
+        v-model:value="activeTab"
+        :bar-width="60"
+        :tabs-padding="20"
+        animated
+        class="custom-tabs"
+      >
+        <n-tab-pane name="tab1" tab="代码查看">
+          <template #tab>
+            <n-icon><FileTray /></n-icon>
+            <span class="ml-2">代码查看</span>
+          </template>
+          <div class="h-screen flex-col" v-if="tabsCount > 0">
+            <AppHeader class="h-60 flex-shrink-0" />
+            <slot />
+          </div>
+          <n-empty class="h-screen mt-15%" v-else description="暂未打开文件">
+            <template #icon>
+              <n-icon>
+                <FileTray />
+              </n-icon>
+            </template>
+          </n-empty>
+        </n-tab-pane>
+        <n-tab-pane name="tab2" tab="CFG结构">
+          <template #tab>
+            <n-icon><Settings /></n-icon>
+            <span class="ml-2">CFG结构</span>
+          </template>
+          <div class="h-screen flex-col">
+            <!-- 调用 CfgPage 组件 -->
+            <CfgPage />
+          </div>
+        </n-tab-pane>
+      </n-tabs>
     </article>
   </div>
 
@@ -98,18 +123,20 @@
     </div>
   </div>
 
-    <!-- 引入代码2的组件 -->
-    <TreeComponent ref="treeComponentRef" />
+  <!-- 引入代码2的组件 -->
+  <TreeComponent ref="treeComponentRef" />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
-import { FileTray } from "@vicons/ionicons5";
+import { FileTray, Settings } from "@vicons/ionicons5"; // 引入图标
 import SideBar from "./sidebar/index.vue";
 import { useTabStore } from "@/stores";
 import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
+import CfgPage from "./header/CfgPage.vue";
+
 
 // State
 const sidebarWidth = ref(420);
@@ -122,6 +149,7 @@ const selectedFile = ref(null);
 const projectOptions = ref([]); // 项目列表数据
 const selectedProject = ref(null); // 用户选择的项目
 const treeComponentRef = ref(null); // 代码2组件的引用
+const activeTab = ref("tab1"); // 当前激活的选项卡
 
 // 反编译按钮点击事件
 const handleDecompile = () => {
@@ -131,6 +159,7 @@ const handleDecompile = () => {
     console.error("TreeComponent 实例未找到");
   }
 };
+
 // Computed properties
 const tabsCount = computed(() => useTabStore().tabs.length);
 
@@ -211,6 +240,7 @@ const handleLoadProject = async () => {
 
   try {
     const response = await axios.get(`http://127.0.0.1:8080/space/load?space=${selectedProject.value}`);
+    console.log("第一个接口返回的数据:", response.data);
     alert("项目加载成功！");
     closeLoadProjectModal();
   } catch (error) {
@@ -246,7 +276,13 @@ const handleUploadFile = async () => {
     const response = await axios.post("http://127.0.0.1:8080/space/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    alert("文件上传成功！");
+    if (response.data == "upload success") {
+      console.log("文件上传成功！:", response.data);
+      alert("文件上传成功！");
+    } else {
+
+    }
+
     closeUploadModal();
   } catch (error) {
     alert("文件上传失败，请稍后重试！");
@@ -298,5 +334,34 @@ const query = () => {
   cursor: ew-resize;
   background-color: #ccc;
   height: 100%;
+}
+
+.custom-tabs {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.custom-tabs .n-tabs-nav {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tabs .n-tabs-tab {
+  padding: 10px 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.custom-tabs .n-tabs-tab--active {
+  color: #1890ff;
+  font-weight: bold;
+}
+
+.custom-tabs .n-tabs-tab:hover {
+  color: #1890ff;
+  background-color: #e6f7ff;
+  border-radius: 4px;
 }
 </style>
