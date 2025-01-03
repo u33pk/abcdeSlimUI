@@ -28,14 +28,40 @@ pnpm dev
 pnpm build
 ```
 
+### json依赖 安装 axios
 
-
-## json依赖 安装 axios
 ```sh
 pnpm add axios
 ```
 
-## cfg依赖 安装 d3
+### cfg依赖 安装 d3
+
 ```sh
 pnpm add d3
 ```
+
+
+
+
+
+## 功能更新记录
+
+### 1、创建项目-UI&接口完成
+
+![image-20250103163028512](images/image-20250103163028512.png)
+
+### 2、上传hap-UI&接口完成
+
+![image-20250103163201566](images/image-20250103163201566.png)
+
+### 3、反编译-UI&接口完成
+
+![image-20250103163353403](images/image-20250103163353403.png)
+
+### 4、加载已有项目-UI&接口完成
+
+![image-20250103163502684](images/image-20250103163502684.png)
+
+### 5、CFG相关调用链-UI&静态数据测试通过
+
+![image-20250103163810832](images/image-20250103163810832.png)
