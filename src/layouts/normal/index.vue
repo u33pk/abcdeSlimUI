@@ -13,8 +13,11 @@
     <n-button type="success" class="mr-5" @click="handleDecompile">
       反编译
     </n-button>
-    <n-button type="success" @click="query">
+    <n-button type="success" class="mr-5" @click="query">
       查  询
+    </n-button>
+    <n-button type="success" class="mr-5" @click="openHelpModal">
+      帮  助
     </n-button>
   </div>
 
@@ -123,6 +126,35 @@
     </div>
   </div>
 
+  <!-- Help Modal -->
+  <div v-if="isHelpModalOpen" class="overlay flex justify-center items-center">
+    <div class="modal-container">
+      <n-form label-width="200px" class="modal-form">
+        <n-form-item label="版本信息">
+          <div v-if="versionInfo" class="version-info">
+            <p><strong>abcde:</strong> <a :href="versionInfo.abcde" target="_blank">{{ versionInfo.abcde }}</a></p>
+            <p><strong>abcdeSlim:</strong> <a :href="versionInfo.abcdeSlim" target="_blank">{{ versionInfo.abcdeSlim }}</a></p>
+            <p><strong>abcdeSlimUI:</strong> <a :href="versionInfo.abcdeSlimUI" target="_blank">{{ versionInfo.abcdeSlimUI }}</a></p>
+            <p><strong>作者:</strong></p>
+            <ul>
+              <li v-for="author in versionInfo.author" :key="author">{{ author }}</li>
+            </ul>
+          </div>
+          <n-empty v-else description="正在加载版本信息...">
+            <template #icon>
+              <n-icon>
+                <FileTray />
+              </n-icon>
+            </template>
+          </n-empty>
+        </n-form-item>
+        <n-space justify="center">
+          <n-button @click="closeHelpModal">关闭</n-button>
+        </n-space>
+      </n-form>
+    </div>
+  </div>
+
   <!-- 引入代码2的组件 -->
   <TreeComponent ref="treeComponentRef" />
 </template>
@@ -137,7 +169,6 @@ import { useTabStore } from "@/stores";
 import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
 import CfgPage from "./header/CfgPage.vue";
 
-
 // State
 const sidebarWidth = ref(420);
 const isDragging = ref(false);
@@ -150,6 +181,8 @@ const projectOptions = ref([]); // 项目列表数据
 const selectedProject = ref(null); // 用户选择的项目
 const treeComponentRef = ref(null); // 代码2组件的引用
 const activeTab = ref("tab1"); // 当前激活的选项卡
+const isHelpModalOpen = ref(false);
+const versionInfo = ref(null);
 
 // 反编译按钮点击事件
 const handleDecompile = () => {
@@ -299,6 +332,23 @@ const decompile = () => {
 const query = () => {
   alert("查询功能待实现");
 };
+
+// Help Modal
+const openHelpModal = async () => {
+  isHelpModalOpen.value = true;
+  try {
+    const response = await axios.get("http://127.0.0.1:8080/misc/version");
+    versionInfo.value = response.data;
+  } catch (error) {
+    alert("获取版本信息失败，请稍后重试！");
+    console.error("Fetch version info error:", error);
+  }
+};
+
+const closeHelpModal = () => {
+  isHelpModalOpen.value = false;
+  versionInfo.value = null;
+};
 </script>
 
 <style scoped>
@@ -316,7 +366,7 @@ const query = () => {
 }
 
 .modal-container {
-  width: 400px;
+  width: 500px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -363,5 +413,32 @@ const query = () => {
   color: #1890ff;
   background-color: #e6f7ff;
   border-radius: 4px;
+}
+
+.version-info {
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+.version-info p {
+  margin: 10px 0;
+}
+
+.version-info a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.version-info a:hover {
+  text-decoration: underline;
+}
+
+.version-info ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+.version-info li {
+  margin: 5px 0;
 }
 </style>
