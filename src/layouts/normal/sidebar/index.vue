@@ -57,17 +57,22 @@ const nodeProps = ({ option }) => {
       if (!option.children && !option.disabled) {
         $message.info(`[Click] ${option.label}`);
         if (option.type === "file") {
+          
           // 发送 HTTP 请求获取数据
           const mathodencodedPath = encodeURIComponent(option.path);
+          // 将 option.path 传递给脚本2
+          if (window.updateCfgPath) {
+                window.updateCfgPath(option.path); // 调用脚本2的全局函数
+              }
+              if (window.updateAsmPath) {
+                window.updateAsmPath(option.path); // 调用脚本2的全局函数
+              }
           axios.get(`http://127.0.0.1:8080/method?method=${mathodencodedPath}`)
             .then(response => {
               console.log("请求返回的结果:", response.data);
               option.data = response.data;
 
-              // 将 option.path 传递给脚本2
-              if (window.updateCfgPath) {
-                window.updateCfgPath(option.path); // 调用脚本2的全局函数
-              }
+              
             })
             .catch(error => {
               console.error("请求数据失败:", error);

@@ -50,29 +50,43 @@
             <n-icon><FileTray /></n-icon>
             <span class="ml-2">代码查看</span>
           </template>
-          <div class="h-screen flex-col" v-show="tabsCount > 0">
-            <AppHeader class="h-60 flex-shrink-0" />
-            <slot />
-          </div>
-          <n-empty class="h-screen mt-15%" v-show="tabsCount === 0" description="暂未打开文件">
-            <template #icon>
-              <n-icon>
-                <FileTray />
-              </n-icon>
-            </template>
-          </n-empty>
         </n-tab-pane>
         <n-tab-pane name="tab2" tab="CFG结构">
           <template #tab>
             <n-icon><Settings /></n-icon>
             <span class="ml-2">CFG结构</span>
           </template>
-          <div class="h-screen flex-col">
-            <!-- 调用 CfgPage 组件 -->
-            <CfgPage />
-          </div>
+        </n-tab-pane>
+        <!-- 新增的 tab3 用于展示汇编代码 -->
+        <n-tab-pane name="tab3" tab="汇编代码">
+          <template #tab>
+            <n-icon><Code /></n-icon>
+            <span class="ml-2">汇编代码</span>
+          </template>
         </n-tab-pane>
       </n-tabs>
+
+      <!-- 内容区域 -->
+      <div class="h-screen flex-col" v-show="activeTab === 'tab1'">
+        <AppHeader class="h-60 flex-shrink-0" />
+        <slot />
+      </div>
+      <div class="h-screen flex-col" v-show="activeTab === 'tab2'">
+        <CfgPage />
+      </div>
+      <!-- 新增的汇编代码展示区域 -->
+      <div class="h-screen flex-col" v-show="activeTab === 'tab3'">
+        <AsmPage />
+      </div>
+
+      <!-- 未打开文件时的提示 -->
+      <n-empty class="h-screen mt-15%" v-show="tabsCount === 0" description="暂未打开文件">
+        <template #icon>
+          <n-icon>
+            <FileTray />
+          </n-icon>
+        </template>
+      </n-empty>
     </article>
   </div>
 
@@ -163,11 +177,12 @@
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
-import { FileTray, Settings } from "@vicons/ionicons5"; // 引入图标
+import { FileTray, Settings, Code } from "@vicons/ionicons5"; // 引入新的图标
 import SideBar from "./sidebar/index.vue";
 import { useTabStore } from "@/stores";
 import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
 import CfgPage from "./header/CfgPage.vue";
+import AsmPage from "./header/asmpage.vue"; // 引入 asmpage.vue 组件
 
 // State
 const sidebarWidth = ref(420);
@@ -183,15 +198,6 @@ const treeComponentRef = ref(null); // 代码2组件的引用
 const activeTab = ref("tab1"); // 当前激活的选项卡
 const isHelpModalOpen = ref(false);
 const versionInfo = ref(null);
-
-// 反编译按钮点击事件
-const handleDecompile = () => {
-  if (treeComponentRef.value) {
-    treeComponentRef.value.decompile(); // 调用代码2的反编译函数
-  } else {
-    console.error("TreeComponent 实例未找到");
-  }
-};
 
 // Computed properties
 const tabsCount = computed(() => useTabStore().tabs.length);
