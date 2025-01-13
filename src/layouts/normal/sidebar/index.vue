@@ -31,12 +31,8 @@ import { FileTrayFullOutline, Folder, FolderOpenOutline } from "@vicons/ionicons
 import axios from "axios";  // 引入 axios
 import { useTabStore } from "@/stores"; //对应FileTray
 
-
 // 树形结构的数据
 const treeData = ref([]);
-
-
-
 
 // 更新树的前缀图标
 const updatePrefixWithExpaned = (_keys, _option, meta) => {
@@ -64,15 +60,13 @@ const nodeProps = ({ option }) => {
           // 发送 HTTP 请求获取数据
           axios.get(`http://127.0.0.1:8080/method?method=${option.path}`)
             .then(response => {
-              // 假设返回的数据在response.data中
               console.log("请求返回的结果:", response.data);
-
-              // 在这里处理返回的数据，比如将数据更新到树形节点中
-              // 或者做其他的操作
-              // 例如：将返回的数据保存到节点的数据中
               option.data = response.data;
 
-              // 你也可以进一步更新 UI 或者处理数据
+              // 将 option.path 传递给脚本2
+              if (window.updateCfgPath) {
+                window.updateCfgPath(option.path); // 调用脚本2的全局函数
+              }
             })
             .catch(error => {
               console.error("请求数据失败:", error);
@@ -82,8 +76,8 @@ const nodeProps = ({ option }) => {
             path: option.path,
             type: option.type,
             label: option.label,
-            data: option.data,//option.data
-          })
+            data: option.data,
+          });
         }
       }
     }
@@ -128,7 +122,6 @@ const parseJsonToTreeData = (json, parentId = 'root', parentPath = '') => {
   
   return result;
 };
-
 
 const parseJsonToTreeDatajson = (json, parentId = 'root', parentPath = '') => {
   const result = [];
@@ -325,33 +318,4 @@ function findPathsContainingABC(jsonData, keyword = 'abc') {
 defineExpose({
   decompile,
 });
-
-
-// 在组件挂载后，通过 HTTP 请求获取数据并初始化树形数据
-// onMounted(() => {
-//   // 发送请求
-//   axios.get("http://127.0.0.1:8080/classes?abc=", {
-//     headers: {
-//       'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
-//     }
-//   })
-//   .then(response => {
-//     // 打印返回的 JSON 数据
-//     console.log("请求返回的数据:", response.data);
-    
-//     // 请求成功后，解析获取的 JSON 数据并设置到 treeData 中
-//     const tree = parseJsonToTreeData(response.data);
-    
-//     // 在树形结构的最外层加上一个根节点
-//     treeData.value = [{
-//       id: "root",
-//       label: "test",
-//       type: 'folder',
-//       children: tree
-//     }];
-//   })
-//   .catch(error => {
-//     console.error("请求数据失败:", error);
-//   });
-// });
 </script>
