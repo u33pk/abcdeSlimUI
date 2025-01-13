@@ -262,8 +262,10 @@ onMounted(() => {
           };
           
           const abcpath = findPathsContainingABC(secondResponseData)[0];
+          // 对 path 进行 URL 编码
+          const abcencodedPath1 = encodeURIComponent(abcpath);
           // 发送第三个请求
-          return axios.get(`http://127.0.0.1:8080/classes?abc=${abcpath}`, {
+          return axios.get(`http://127.0.0.1:8080/classes?abc=${abcencodedPath1}`, {
             headers: {
               'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
             }

@@ -50,11 +50,11 @@
             <n-icon><FileTray /></n-icon>
             <span class="ml-2">代码查看</span>
           </template>
-          <div class="h-screen flex-col" v-if="tabsCount > 0">
+          <div class="h-screen flex-col" v-show="tabsCount > 0">
             <AppHeader class="h-60 flex-shrink-0" />
             <slot />
           </div>
-          <n-empty class="h-screen mt-15%" v-else description="暂未打开文件">
+          <n-empty class="h-screen mt-15%" v-show="tabsCount === 0" description="暂未打开文件">
             <template #icon>
               <n-icon>
                 <FileTray />
@@ -236,7 +236,8 @@ const handleCreateProject = async () => {
   }
 
   try {
-    const response = await axios.get(`http://127.0.0.1:8080/space/create?space=${projectName.value}`);
+    const encodedProjectName = encodeURIComponent(projectName.value); // 编码项目名称
+    const response = await axios.get(`http://127.0.0.1:8080/space/create?space=${encodedProjectName}`);
     alert("项目创建成功！");
     closeCreateProjectModal();
   } catch (error) {
@@ -272,7 +273,8 @@ const handleLoadProject = async () => {
   }
 
   try {
-    const response = await axios.get(`http://127.0.0.1:8080/space/load?space=${selectedProject.value}`);
+    const encodedProjectName = encodeURIComponent(selectedProject.value); // 编码项目名称
+    const response = await axios.get(`http://127.0.0.1:8080/space/load?space=${encodedProjectName}`);
     console.log("第一个接口返回的数据:", response.data);
     alert("项目加载成功！");
     closeLoadProjectModal();
@@ -303,7 +305,8 @@ const handleUploadFile = async () => {
   }
 
   const formData = new FormData();
-  formData.append("xxx.hap", selectedFile.value);
+  const encodedFileName = encodeURIComponent(selectedFile.value.name); // 编码文件名
+  formData.append("xxx.hap", selectedFile.value, encodedFileName); // 添加编码后的文件名
 
   try {
     const response = await axios.post("http://127.0.0.1:8080/space/upload", formData, {
@@ -312,10 +315,7 @@ const handleUploadFile = async () => {
     if (response.data == "upload success") {
       console.log("文件上传成功！:", response.data);
       alert("文件上传成功！");
-    } else {
-
     }
-
     closeUploadModal();
   } catch (error) {
     alert("文件上传失败，请稍后重试！");

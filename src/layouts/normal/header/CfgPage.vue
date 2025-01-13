@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch, watchEffect } from 'vue';
 import * as d3 from 'd3';
 
 // 引用容器元素
@@ -22,16 +22,61 @@ let cfgData = ref(null); // 使用 ref 来存储动态获取的数据
 
 // 定义 zoom 行为
 let zoom = d3.zoom();
-let svg, simulation, link, node;
+let svg = ref(null); // 将 svg 定义为 ref，确保在组件中可访问
+let simulation, link, node;
+
+// 当前方法的路径
+let currentMethodPath = ref(null);
+
+// 监听 currentMethodPath 的变化，只有在路径变化时才获取数据
+watch(currentMethodPath, (newPath) => {
+  if (newPath) {
+    fetchCfgData(newPath); // 只有在路径变化时才获取数据
+  }
+});
+
+// 定义 fetchCfgData 函数
+const fetchCfgData = async (path) => {
+  try {
+    // 对 path 进行 URL 编码
+    const encodedPath = encodeURIComponent(path);
+    // 发起 HTTP 请求获取 CFG 数据
+    const response = await fetch(`http://127.0.0.1:8080/method/cfg?method=${encodedPath}`);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const newData = await response.json(); // 获取新的数据
+    if (JSON.stringify(newData) !== JSON.stringify(cfgData.value)) {
+      cfgData.value = newData; // 只有在数据真正变化时才更新 cfgData.value
+    }
+  } catch (error) {
+    console.error('Error fetching CFG data:', error);
+  }
+};
+
+// 暴露一个全局函数，用于更新 method 路径
+const updateCfgPath = (path) => {
+  currentMethodPath.value = path; // 更新路径
+};
+
+// 将全局函数挂载到 window 对象
+window.updateCfgPath = updateCfgPath;
+
+// 监听 cfgData.value 的变化，只有在数据变化时才渲染图表
+watch(cfgData, (newValue) => {
+  if (newValue) {
+    renderGraph(); // 只有在 cfgData.value 真正更新时才重新渲染图表
+  }
+});
 
 // 窗口大小变化时的处理函数
 function handleResize() {
-  if (!graphContainer.value) return; // 确保 graphContainer 已初始化
+  if (!graphContainer.value || !svg.value) return; // 确保 graphContainer 和 svg 已初始化
   const newWidth = graphContainer.value.clientWidth;
   const newHeight = graphContainer.value.clientHeight;
 
   // 更新 SVG 的宽高
-  svg.attr("width", newWidth).attr("height", newHeight);
+  svg.value.attr("width", newWidth).attr("height", newHeight);
 
   // 更新力导向图的中心点
   simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
@@ -40,12 +85,14 @@ function handleResize() {
 
 // 放大功能
 function zoomIn() {
-  svg.transition().call(zoom.scaleBy, 1.2); // 放大 1.2 倍
+  if (!svg.value) return; // 确保 svg 已初始化
+  svg.value.transition().call(zoom.scaleBy, 1.2); // 放大 1.2 倍
 }
 
 // 缩小功能
 function zoomOut() {
-  svg.transition().call(zoom.scaleBy, 0.8); // 缩小 0.8 倍
+  if (!svg.value) return; // 确保 svg 已初始化
+  svg.value.transition().call(zoom.scaleBy, 0.8); // 缩小 0.8 倍
 }
 
 // 计算节点宽度
@@ -93,33 +140,6 @@ function getNodeOppositeOffset(source, target) {
   return { offsetX, offsetY };
 }
 
-let currentMethodPath = ref(null); // 用于存储当前的 method 路径
-
-// 定义 fetchCfgData 函数
-const fetchCfgData = async () => {
-  if (!currentMethodPath.value) return; // 如果没有路径，直接返回
-  try {
-    // 发起 HTTP 请求获取 CFG 数据
-    const response = await fetch(`http://127.0.0.1:8080/method/cfg?method=${currentMethodPath.value}`);
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    cfgData.value = await response.json(); // 将返回的 JSON 数据赋值给 cfgData
-    renderGraph(); // 重新渲染 CFG 图
-  } catch (error) {
-    console.error('Error fetching CFG data:', error);
-  }
-};
-
-// 暴露一个全局函数，用于更新 method 路径
-const updateCfgPath = (path) => {
-  currentMethodPath.value = path; // 更新路径
-  fetchCfgData(); // 根据新的路径重新获取 CFG 数据
-};
-
-// 将全局函数挂载到 window 对象
-window.updateCfgPath = updateCfgPath;
-
 // 绘制 CFG 图
 const renderGraph = () => {
   if (!cfgData.value || !graphContainer.value) return; // 如果没有数据或容器未初始化，直接返回
@@ -147,14 +167,14 @@ const renderGraph = () => {
   const containerHeight = graphContainer.value.clientHeight; // 容器高度
 
   // 创建 SVG 元素
-  svg = d3
+  svg.value = d3
     .select(graphContainer.value)
     .append("svg")
     .attr("width", "100%") // 宽度设置为 100%
     .attr("height", "100%"); // 高度设置为 100%
 
   // 定义箭头
-  svg
+  svg.value
     .append("defs")
     .selectAll("marker")
     .data(["arrow-true", "arrow-false"]) // 两种箭头：true 和 false
@@ -183,7 +203,7 @@ const renderGraph = () => {
     .force("collision", d3.forceCollide().radius((d) => Math.max(getNodeWidth(d), getNodeHeight(d)) / 2 + 25)); // 强制节点间隔 50px
 
   // 创建边
-  link = svg
+  link = svg.value
     .append("g")
     .selectAll("line")
     .data(edges)
@@ -196,7 +216,7 @@ const renderGraph = () => {
     );
 
   // 创建节点组
-  node = svg
+  node = svg.value
     .append("g")
     .selectAll("g")
     .data(nodes)
@@ -326,7 +346,7 @@ const renderGraph = () => {
     // 动态调整边的宽度
     link.attr("stroke-width", 2 * scale); // 动态调整边的宽度
   });
-  svg.call(zoom);
+  svg.value.call(zoom);
 
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize);
@@ -358,15 +378,13 @@ const renderGraph = () => {
 
     // 调整 SVG 的 viewBox
     const padding = 50; // 边距
-    svg.attr("viewBox", `${graphBBox.x - padding} ${graphBBox.y - padding} ${graphBBox.width + 2 * padding} ${graphBBox.height + 2 * padding}`);
+    svg.value.attr("viewBox", `${graphBBox.x - padding} ${graphBBox.y - padding} ${graphBBox.width + 2 * padding} ${graphBBox.height + 2 * padding}`);
   });
 };
 
-// 组件挂载时执行
+// 组件挂载时初始化事件监听器
 onMounted(() => {
-  if (currentMethodPath.value) {
-    fetchCfgData();
-  }
+  window.addEventListener('resize', handleResize);
 });
 
 // 组件卸载时移除事件监听器
