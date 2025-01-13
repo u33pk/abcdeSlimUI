@@ -58,7 +58,8 @@ const nodeProps = ({ option }) => {
         $message.info(`[Click] ${option.label}`);
         if (option.type === "file") {
           // 发送 HTTP 请求获取数据
-          axios.get(`http://127.0.0.1:8080/method?method=${option.path}`)
+          const mathodencodedPath = encodeURIComponent(option.path);
+          axios.get(`http://127.0.0.1:8080/method?method=${mathodencodedPath}`)
             .then(response => {
               console.log("请求返回的结果:", response.data);
               option.data = response.data;
@@ -263,9 +264,9 @@ onMounted(() => {
           
           const abcpath = findPathsContainingABC(secondResponseData)[0];
           // 对 path 进行 URL 编码
-          const abcencodedPath1 = encodeURIComponent(abcpath);
+          const abcencodedPath = encodeURIComponent(abcpath);
           // 发送第三个请求
-          return axios.get(`http://127.0.0.1:8080/classes?abc=${abcencodedPath1}`, {
+          return axios.get(`http://127.0.0.1:8080/classes?abc=${abcencodedPath}`, {
             headers: {
               'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
             }
