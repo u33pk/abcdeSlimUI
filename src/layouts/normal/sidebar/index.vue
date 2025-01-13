@@ -330,7 +330,7 @@ defineExpose({
 // 在组件挂载后，通过 HTTP 请求获取数据并初始化树形数据
 // onMounted(() => {
 //   // 发送请求
-//   axios.get("http://127.0.0.1:8080/classes?abc=360/ets/modules.abc", {
+//   axios.get("http://127.0.0.1:8080/classes?abc=", {
 //     headers: {
 //       'Access-Control-Allow-Origin': '*',  // 例如添加Authorization头部
 //     }
