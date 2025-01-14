@@ -16,7 +16,7 @@
     <n-button type="success" class="mr-5" @click="query">
       查  询
     </n-button>
-    <n-button type="success" class="mr-5">
+    <n-button type="success" class="mr-5" @click="openSettingsModal">
       设  置
     </n-button>
     <n-button type="success" class="mr-5" @click="openHelpModal">
@@ -172,15 +172,30 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div v-if="isSettingsModalOpen" class="overlay flex justify-center items-center">
+    <div class="modal-container">
+      <div class="modal-form">
+        <n-input v-model:value="AIServer" placeholder="请输入AIServer地址" class="mb-4" />
+        <n-input v-model:value="AIKey" placeholder="请输入AIKey" class="mb-4" />
+        <n-input v-model:value="AIModule" placeholder="请输入AIModule" class="mb-4" />
+        <n-space justify="center">
+          <n-button type="primary" @click="handleSettingsSubmit">确认</n-button>
+          <n-button @click="closeSettingsModal">取消</n-button>
+        </n-space>
+      </div>
+    </div>
+  </div>
+
   <!-- 引入代码2的组件 -->
   <TreeComponent ref="treeComponentRef" />
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
-import { FileTray, Settings, Code } from "@vicons/ionicons5"; // 引入新的图标
+import { FileTray, Settings, Code } from "@vicons/ionicons5"; // 引入图标
 import SideBar from "./sidebar/index.vue";
 import { useTabStore } from "@/stores";
 import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
@@ -201,6 +216,12 @@ const treeComponentRef = ref(null); // 代码2组件的引用
 const activeTab = ref("tab1"); // 当前激活的选项卡
 const isHelpModalOpen = ref(false);
 const versionInfo = ref(null);
+
+// 设置相关的状态
+const isSettingsModalOpen = ref(false);
+const AIServer = ref("");
+const AIKey = ref("");
+const AIModule = ref("");
 
 // Computed properties
 const tabsCount = computed(() => useTabStore().tabs.length);
@@ -333,7 +354,7 @@ const handleUploadFile = async () => {
 };
 
 // Decompile
-const decompile = () => {
+const handleDecompile = () => {
   alert("反编译功能待实现");
 };
 
@@ -358,9 +379,40 @@ const closeHelpModal = () => {
   isHelpModalOpen.value = false;
   versionInfo.value = null;
 };
+
+// Settings Modal
+const openSettingsModal = () => {
+  isSettingsModalOpen.value = true;
+};
+
+const closeSettingsModal = () => {
+  isSettingsModalOpen.value = false;
+  AIServer.value = "";
+  AIKey.value = "";
+  AIModule.value = "";
+};
+
+const handleSettingsSubmit = async () => {
+  if (!AIServer.value || !AIKey.value || !AIModule.value) {
+    alert("请填写所有字段！");
+    return;
+  }
+
+  try {
+    const response = await axios.post("http://127.0.0.1:8080/misc/config",{AIServer: "https://api.deepseek.com"});
+    if (response.status === 200) {
+      alert("设置保存成功！");
+      closeSettingsModal();
+    }
+  } catch (error) {
+    alert("设置保存失败，请稍后重试！");
+    console.error("Save settings error:", error);
+  }
+};
 </script>
 
 <style scoped>
+/* 样式部分保持不变 */
 .overlay {
   position: fixed;
   top: 0;
@@ -388,66 +440,7 @@ const closeHelpModal = () => {
   flex-direction: column;
 }
 
-.resize-handle {
-  width: 10px;
-  cursor: ew-resize;
-  background-color: #ccc;
-  height: 100%;
-}
-
-.custom-tabs {
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.custom-tabs .n-tabs-nav {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.custom-tabs .n-tabs-tab {
-  padding: 10px 20px;
-  font-size: 14px;
-  color: #666;
-}
-
-.custom-tabs .n-tabs-tab--active {
-  color: #1890ff;
-  font-weight: bold;
-}
-
-.custom-tabs .n-tabs-tab:hover {
-  color: #1890ff;
-  background-color: #e6f7ff;
-  border-radius: 4px;
-}
-
-.version-info {
-  font-family: Arial, sans-serif;
-  color: #333;
-}
-
-.version-info p {
-  margin: 10px 0;
-}
-
-.version-info a {
-  color: #1890ff;
-  text-decoration: none;
-}
-
-.version-info a:hover {
-  text-decoration: underline;
-}
-
-.version-info ul {
-  list-style-type: none;
-  padding-left: 20px;
-}
-
-.version-info li {
-  margin: 5px 0;
+.mb-4 {
+  margin-bottom: 1rem;
 }
 </style>
