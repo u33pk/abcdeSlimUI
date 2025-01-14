@@ -62,10 +62,10 @@ const nodeProps = ({ option }) => {
           const mathodencodedPath = encodeURIComponent(option.path);
           // 将 option.path 传递给脚本2
           if (window.updateCfgPath) {
-                window.updateCfgPath(option.path); // 调用脚本2的全局函数
+                window.updateCfgPath(mathodencodedPath); // 调用脚本2的全局函数
               }
               if (window.updateAsmPath) {
-                window.updateAsmPath(option.path); // 调用脚本2的全局函数
+                window.updateAsmPath(mathodencodedPath); // 调用脚本2的全局函数
               }
           axios.get(`http://127.0.0.1:8080/method?method=${mathodencodedPath}`)
             .then(response => {

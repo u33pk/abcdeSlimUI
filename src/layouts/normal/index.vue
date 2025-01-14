@@ -16,6 +16,9 @@
     <n-button type="success" class="mr-5" @click="query">
       查  询
     </n-button>
+    <n-button type="success" class="mr-5">
+      设  置
+    </n-button>
     <n-button type="success" class="mr-5" @click="openHelpModal">
       帮  助
     </n-button>
