@@ -393,21 +393,30 @@ const closeSettingsModal = () => {
 };
 
 const handleSettingsSubmit = async () => {
-  if (!AIServer.value || !AIKey.value || !AIModule.value) {
-    alert("请填写所有字段！");
-    return;
-  }
+  // if (!AIServer.value || !AIKey.value || !AIModule.value) {
+  //   alert("请填写所有字段！");
+  //   return;
+  // }
 
-  try {
-    const response = await axios.post("http://127.0.0.1:8080/misc/config",{AIServer: "https://api.deepseek.com"});
-    if (response.status === 200) {
-      alert("设置保存成功！");
-      closeSettingsModal();
-    }
-  } catch (error) {
-    alert("设置保存失败，请稍后重试！");
-    console.error("Save settings error:", error);
-  }
+  const configData = {
+    AIServer: AIServer.value,
+    AIKey: AIKey.value,
+    AIModule: AIModule.value,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  };
+
+  axios.post('http://127.0.0.1:8080/misc/config', configData, { headers })
+    .then(response => {
+      console.log('Response:', response.data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error:', error);
+    });
 };
 </script>
 
