@@ -393,6 +393,7 @@ const closeSettingsModal = () => {
 };
 
 const handleSettingsSubmit = async () => {
+  
   // if (!AIServer.value || !AIKey.value || !AIModule.value) {
   //   alert("请填写所有字段！");
   //   return;
