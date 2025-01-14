@@ -353,9 +353,13 @@ const handleUploadFile = async () => {
   }
 };
 
-// Decompile
+// 反编译按钮点击事件
 const handleDecompile = () => {
-  alert("反编译功能待实现");
+  if (treeComponentRef.value) {
+    treeComponentRef.value.decompile(); // 调用代码2的反编译函数
+  } else {
+    console.error("TreeComponent 实例未找到");
+  }
 };
 
 // Query

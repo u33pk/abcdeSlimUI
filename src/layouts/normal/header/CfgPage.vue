@@ -38,10 +38,8 @@ watch(currentMethodPath, (newPath) => {
 // 定义 fetchCfgData 函数
 const fetchCfgData = async (path) => {
   try {
-    // 对 path 进行 URL 编码
-    const encodedPath = encodeURIComponent(path);
     // 发起 HTTP 请求获取 CFG 数据
-    const response = await fetch(`http://127.0.0.1:8080/method/cfg?method=${encodedPath}`);
+    const response = await fetch(`http://127.0.0.1:8080/method/cfg?method=${path}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
