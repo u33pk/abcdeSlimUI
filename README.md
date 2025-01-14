@@ -84,7 +84,15 @@ pnpm add d3
 
 ![image-20250113164926568](images/image-20250113164926568.png)
 
-### 7、帮助Version-UI&接口测试通过
+### 7、更新大模型API Config(可本地可远程)-UI&接口测试通过
+
+![image-20250114155453136](images/image-20250114155453136.png)
+
+本地配置
+
+![image-20250114155731764](images/image-20250114155731764.png)
+
+### 8、帮助Version-UI&接口测试通过
 
 ![image-20250106152653323](images/image-20250106152653323.png)
 

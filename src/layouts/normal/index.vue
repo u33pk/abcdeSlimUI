@@ -412,6 +412,7 @@ const handleSettingsSubmit = async () => {
   axios.post('http://127.0.0.1:8080/misc/config', configData, { headers })
     .then(response => {
       console.log('Response:', response.data);
+      alert("配置更新成功！");
     })
     .catch(error => {
         console.error('Error:', error);
