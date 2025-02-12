@@ -51,6 +51,64 @@ const updatePrefixWithExpaned = (_keys, _option, meta) => {
   }
 };
 
+// 暴露一个全局函数，用于更新 method 路径
+const decompileclas = (data) => {
+
+  // 发送 HTTP 请求获取数据
+  const mathodencodedPath = encodeURIComponent(data);
+  // 将 option.path 传递给脚本2
+  if (window.updateCfgPath) {
+        window.updateCfgPath(mathodencodedPath); // 调用脚本2的全局函数
+      }
+      if (window.updateAsmPath) {
+        window.updateAsmPath(mathodencodedPath); // 调用脚本2的全局函数
+      }
+
+  // 遍历 rootNode2 的子节点，查找匹配的 path
+  const rootNode2 = treeData.value.find(node => node.id === "2");
+  if (rootNode2 && rootNode2.children) {
+    const matchedNode = findNodeByPath(rootNode2.children, data);
+    if (matchedNode) {
+      axios.get(`http://127.0.0.1:8080/method?method=${mathodencodedPath}`)
+    .then(response => {
+      console.log("请求返回的结果:", response.data);
+      matchedNode.data = response.data;
+    })
+      // 如果找到匹配的节点，填充对应的数据
+      useTabStore().addTab({
+        id: matchedNode.id,
+        path: matchedNode.path,
+        type: matchedNode.type,
+        label: matchedNode.label,
+        data: matchedNode.data,
+      });
+    } else {
+      console.warn("未找到匹配的 path:", data);
+    }
+  } else {
+    console.warn("rootNode2 不存在或没有子节点");
+  }
+};
+
+// 递归查找匹配的 path
+const findNodeByPath = (nodes, path) => {
+  for (const node of nodes) {
+    if (node.path === path) {
+      return node;
+    }
+    if (node.children) {
+      const found = findNodeByPath(node.children, path);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+// 将全局函数挂载到 window 对象
+window.decompileclas = decompileclas;
+
 const nodeProps = ({ option }) => {
   return {
     onClick() {
@@ -326,4 +384,5 @@ function findPathsContainingABC(jsonData, keyword = 'abc') {
 defineExpose({
   decompile,
 });
+
 </script>

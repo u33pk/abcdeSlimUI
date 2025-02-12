@@ -11,16 +11,19 @@
       上传Hap
     </n-button>
     <n-button type="success" class="mr-5" @click="handleDecompile">
-      反编译
+      Hap反编译
     </n-button>
-    <n-button type="success" class="mr-5" @click="query">
-      查  询
+    <n-button type="success" class="mr-5" @click="jshandleDecompile">
+      Js全部反编译
+    </n-button>
+    <n-button type="success" class="mr-5" @click="openSearchModal">
+      搜   索
     </n-button>
     <n-button type="success" class="mr-5" @click="openSettingsModal">
-      设  置
+      设   置
     </n-button>
     <n-button type="success" class="mr-5" @click="openHelpModal">
-      帮  助
+      帮   助
     </n-button>
   </div>
 
@@ -60,11 +63,17 @@
             <span class="ml-2">CFG结构</span>
           </template>
         </n-tab-pane>
-        <!-- 新增的 tab3 用于展示汇编代码 -->
         <n-tab-pane name="tab3" tab="汇编代码">
           <template #tab>
             <n-icon><Code /></n-icon>
             <span class="ml-2">汇编代码</span>
+          </template>
+        </n-tab-pane>
+        <!-- 新增的 tab4 用于展示搜索结果 -->
+        <n-tab-pane name="tab4" tab="搜索结果">
+          <template #tab>
+            <n-icon><Search /></n-icon>
+            <span class="ml-2">搜索结果</span>
           </template>
         </n-tab-pane>
       </n-tabs>
@@ -77,10 +86,30 @@
       <div class="h-screen flex-col" v-show="activeTab === 'tab2'">
         <CfgPage />
       </div>
-      <!-- 新增的汇编代码展示区域 -->
       <div class="h-screen flex-col" v-show="activeTab === 'tab3'">
         <AsmPage />
       </div>
+        <!-- 搜索结果展示区域 -->
+<!-- 搜索结果展示区域 -->
+<div class="h-screen flex-col" v-show="activeTab === 'tab4'">
+    <!-- 展示查询内容 -->
+    <div class="search-query-display">
+      <n-text strong>查询内容：</n-text>
+      <n-text>{{ displayedSearchKey }}</n-text>
+    </div>
+
+    <!-- 展示查询结果 -->
+    <n-spin :show="isLoading">
+      <div class="search-results-container" style="overflow: auto; max-height: 600px;">
+        <n-data-table
+          :columns="searchResultColumns"
+          :data="highlightedSearchResults"
+          :scroll-x="1000"
+          :scroll-y="500"
+        />
+      </div>
+    </n-spin>
+  </div>
 
       <!-- 未打开文件时的提示 -->
       <n-empty class="h-screen mt-15%" v-show="tabsCount === 0" description="暂未打开文件">
@@ -143,6 +172,21 @@
     </div>
   </div>
 
+  <!-- Search Modal -->
+  <div v-if="isSearchModalOpen" class="overlay flex justify-center items-center">
+    <div class="modal-container">
+      <n-form label-width="80px" class="modal-form">
+        <n-form-item label="搜索内容">
+          <n-input v-model:value="searchKey" placeholder="请输入搜索内容" />
+        </n-form-item>
+        <n-space justify="center">
+          <n-button type="primary" @click="handleSearch">确认</n-button>
+          <n-button @click="closeSearchModal">取消</n-button>
+        </n-space>
+      </n-form>
+    </div>
+  </div>
+
   <!-- Help Modal -->
   <div v-if="isHelpModalOpen" class="overlay flex justify-center items-center">
     <div class="modal-container">
@@ -195,7 +239,7 @@
 import { ref, computed } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
-import { FileTray, Settings, Code } from "@vicons/ionicons5"; // 引入图标
+import { FileTray, Settings, Code, Search } from "@vicons/ionicons5"; // 引入图标
 import SideBar from "./sidebar/index.vue";
 import { useTabStore } from "@/stores";
 import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
@@ -215,7 +259,127 @@ const selectedProject = ref(null); // 用户选择的项目
 const treeComponentRef = ref(null); // 代码2组件的引用
 const activeTab = ref("tab1"); // 当前激活的选项卡
 const isHelpModalOpen = ref(false);
+const isjshandleDecompile = ref(false);
 const versionInfo = ref(null);
+
+// 搜索相关的状态
+const isSearchModalOpen = ref(false);
+const searchKey = ref("");
+const displayedSearchKey = ref("");
+const searchResults = ref([]);
+const isLoading = ref(false);
+
+// 修改表格列定义，添加操作按钮
+// 修改表格列定义，添加操作按钮
+const searchResultColumns = ref([
+{
+    title: '操作',
+    key: 'actions',
+    render(row) {
+      return h(
+        'div',
+        { class: 'action-button-container' },
+        [
+          h(
+            'n-button',
+            {
+              type: 'primary',
+              size: 'small',
+              class: 'jump-button',
+              onClick: () => handleJumpToDecompile(row)
+            },
+            '跳转反编译'
+          )
+        ]
+      );
+    }
+  },{ title: '结果', key: 'result', render(row) {
+    return h('div', {
+      innerHTML: row.result
+    });
+  }}
+]);
+
+// 高亮匹配的查询内容
+const highlightedSearchResults = computed(() => {
+  const keyword = displayedSearchKey.value;
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义特殊字符
+  const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+  return searchResults.value.map(result => ({
+    result: result.result.replace(regex, '<span style="color: red;">$1</span>')
+  }));
+});
+
+// 右键菜单相关状态
+const showContextMenu = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
+const selectedRow = ref(null);
+
+// 获取每一行的内容
+const rowProps = (row) => {
+  return {
+    onContextmenu: (e) => handleContextMenu(e, row)
+  };
+};
+
+// 右键菜单处理函数
+const handleContextMenu = (e, row) => {
+  e.preventDefault();
+  contextMenuX.value = e.clientX;
+  contextMenuY.value = e.clientY;
+  selectedRow.value = row; // 保存当前行的内容
+  showContextMenu.value = true;
+  console.log("Treesdsdas"+selectedRow.value);
+  // 监听全局点击事件
+  document.addEventListener('click', handleGlobalClick);
+};
+
+
+// 全局点击事件处理函数
+const handleGlobalClick = (e) => {
+  // 判断点击的位置是否在菜单之外
+  if (!e.target.closest('.context-menu')) {
+    showContextMenu.value = false;
+    // 移除全局点击事件监听器
+    document.removeEventListener('click', handleGlobalClick);
+  }
+};
+
+
+// 跳转反编译处理函数
+const handleJumpToDecompile = (row) => {
+  if (treeComponentRef.value && row) {
+    window.decompileclas(cleanedText(row.result));
+    activeTab.value = "tab1"; // 切换到 tab1
+  } else {
+    console.error("TreeComponent 实例未找到或行数据无效");
+  }
+};
+
+const cleanedText = (data) => {
+      // 去除 <span style="color: red;"> 和 </span>
+      data = data.replace(/<span style="color: red;">/g, '');
+      data = data.replace(/<\/span>/g, '');
+      return data;
+};
+
+// // 跳转反编译处理函数
+// const handleJumpToDecompile = () => {
+//   if (treeComponentRef.value && selectedRow.value) {
+//     //treeComponentRef.value.decompileclass(selectedRow.value.result); // 传递当前行的内容
+//     window.decompileclas(selectedRow.value.result);
+//     activeTab.value = "tab1"; // 切换到 tab1
+//   } else {
+//     window.decompileclas(row.value.result);
+//     activeTab.value = "tab1"; // 切换到 tab1
+//     console.error("TreeComponent 实例未找到或行数据无效");
+//   }
+//   showContextMenu.value = false; // 关闭右键菜单
+//   // 移除全局点击事件监听器
+//   document.removeEventListener('click', handleGlobalClick);
+// };
+
 
 // 设置相关的状态
 const isSettingsModalOpen = ref(false);
@@ -306,6 +470,29 @@ const handleLoadProject = async () => {
     const encodedProjectName = encodeURIComponent(selectedProject.value); // 编码项目名称
     const response = await axios.get(`http://127.0.0.1:8080/space/load?space=${encodedProjectName}`);
     console.log("第一个接口返回的数据:", response.data);
+    // 发送第一个请求获取 space/list 的数据
+    axios.get("http://127.0.0.1:8080/space/list")
+      .then(response => {
+        // 获取第一个接口返回的数据
+        const firstResponseData = response.data;
+        console.log("第1个接口返回的数据:", firstResponseData);
+
+        // 假设第一个接口返回的数据是一个字符串或对象，提取出 test
+        const test = firstResponseData[0]; // 根据实际返回的数据结构进行调整
+
+        // 发送第二个请求，使用第一个接口返回的数据作为参数
+        return axios.get(`http://127.0.0.1:8080/hap?file=${test}`)
+          .then(secondResponse => {
+            // 获取第二个接口返回的 JSON 数据
+            const secondResponseData = secondResponse.data;
+            console.log("第二个接口返回的数据:", secondResponseData);   
+            // 在所有异步操作完成后刷新页面
+            window.location.reload(); 
+          });
+      })
+    .catch(error => {
+      console.error("请求数据失败:", error);
+    });
     alert("项目加载成功！");
     closeLoadProjectModal();
   } catch (error) {
@@ -362,9 +549,57 @@ const handleDecompile = () => {
   }
 };
 
-// Query
-const query = () => {
-  alert("查询功能待实现");
+// js反编译 Modal
+const jshandleDecompile = async () => {
+  isjshandleDecompile.value = true;
+  try {
+    alert("全部反编译开始, 留意token数量！");
+    const response = await axios.get("http://127.0.0.1:8080/method/all");
+    versionInfo.value = response.data;
+  } catch (error) {
+    alert("全部反编译失败，请稍后重试！");
+    console.error("Fetch version info error:", error);
+  }
+};
+
+// Search Modal
+const openSearchModal = () => {
+  isSearchModalOpen.value = true;
+};
+
+// 搜索功能
+const handleSearch = async () => {
+  if (!searchKey.value) {
+    alert("请输入搜索内容！");
+    return;
+  }
+
+  isLoading.value = true; // 开始加载
+  try {
+    const startTime = Date.now();
+    const response = await axios.get(`http://127.0.0.1:8080/method/search?key=${encodeURIComponent(searchKey.value)}`);
+    const endTime = Date.now();
+    const duration = endTime - startTime; // 计算查询时间
+
+    // 模拟加载动画持续时间
+    await new Promise(resolve => setTimeout(resolve, duration));
+
+    searchResults.value = response.data.map(result => ({ result: result })); // 假设返回的数据结构是数组，每个元素包含一个 result 字段
+    displayedSearchKey.value = searchKey.value; // 保存查询内容
+    activeTab.value = "tab4"; // 切换到搜索结果选项卡
+    closeSearchModal();
+  } catch (error) {
+    alert("搜索失败，请稍后重试！");
+    console.error("Search error:", error);
+  } finally {
+    isLoading.value = false; // 结束加载
+  }
+};
+
+// 关闭搜索模态框
+const closeSearchModal = () => {
+  isSearchModalOpen.value = false;
+  searchKey.value = ""; // 清空输入框内容，但 displayedSearchKey 仍然保留
 };
 
 // Help Modal
@@ -427,6 +662,40 @@ const handleSettingsSubmit = async () => {
 </script>
 
 <style scoped>
+
+/* 新增样式 */
+.search-query-display {
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* 新增样式 */
+.search-results-container {
+  height: calc(100% - 80px); /* 调整为 80px 以确保有足够的空间 */
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: auto; /* 水平滚动 */
+  padding: 16px; /* 添加一些内边距 */
+  box-sizing: border-box; /* 确保内边距和边框包含在宽度和高度内 */
+}
+
+/* 确保表格内容能够正确滚动 */
+.n-data-table {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box; /* 确保内边距和边框包含在宽度和高度内 */
+}
+
+/* 加载动画样式 */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
 /* 样式部分保持不变 */
 .overlay {
   position: fixed;
@@ -457,5 +726,52 @@ const handleSettingsSubmit = async () => {
 
 .mb-4 {
   margin-bottom: 1rem;
+}
+
+/* 右键菜单样式 */
+.context-menu {
+  position: fixed;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 8px 0;
+  border-radius: 4px;
+}
+
+.context-menu div {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.context-menu div:hover {
+  background-color: #f0f0f0;
+}
+
+/* 操作按钮容器样式 */
+.action-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 跳转按钮样式 */
+.jump-button {
+  background-color: #409eff; /* 蓝色背景 */
+  color: white; /* 白色文字 */
+  border: none; /* 去掉边框 */
+  border-radius: 4px; /* 圆角 */
+  padding: 6px 12px; /* 内边距 */
+  font-size: 12px; /* 字体大小 */
+  cursor: pointer; /* 鼠标指针 */
+  transition: background-color 0.3s ease; /* 背景色过渡效果 */
+}
+
+.jump-button:hover {
+  background-color: #66b1ff; /* 鼠标悬停时的背景色 */
+}
+
+.jump-button:active {
+  background-color: #3a8ee6; /* 按钮按下时的背景色 */
 }
 </style>

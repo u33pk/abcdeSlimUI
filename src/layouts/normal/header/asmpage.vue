@@ -24,7 +24,7 @@ const fetchAsmCode = async (path) => {
   try {
     const response = await axios.get(`http://127.0.0.1:8080/method/asm?method=${path}`);
     console.log("Assembly code data:", response.data);
-    asmPath.value = `AsmPath: ${path}`; // 更新页面状态
+    asmPath.value = `AsmPath: ${path}`.replace(/%2F/g, '/'); // 更新页面状态
     asmCode.value = response.data; // 更新页面状态
   } catch (error) {
     console.error("Failed to fetch assembly code:", error);
