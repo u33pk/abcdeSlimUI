@@ -89,27 +89,27 @@
       <div class="h-screen flex-col" v-show="activeTab === 'tab3'">
         <AsmPage />
       </div>
-        <!-- 搜索结果展示区域 -->
-<!-- 搜索结果展示区域 -->
-<div class="h-screen flex-col" v-show="activeTab === 'tab4'">
-    <!-- 展示查询内容 -->
-    <div class="search-query-display">
-      <n-text strong>查询内容：</n-text>
-      <n-text>{{ displayedSearchKey }}</n-text>
-    </div>
+      <!-- 搜索结果展示区域 -->
+      <div class="h-screen flex-col" v-show="activeTab === 'tab4'">
+        <!-- 展示查询内容 -->
+        <div class="search-query-display">
+          <n-text strong>查询内容：</n-text>
+          <n-text>{{ displayedSearchKey }}</n-text>
+        </div>
 
-    <!-- 展示查询结果 -->
-    <n-spin :show="isLoading">
-      <div class="search-results-container" style="overflow: auto; max-height: 600px;">
-        <n-data-table
-          :columns="searchResultColumns"
-          :data="highlightedSearchResults"
-          :scroll-x="1000"
-          :scroll-y="500"
-        />
+        <!-- 展示查询结果 -->
+        <n-spin :show="isLoading">
+          <div class="search-results-container" style="overflow: auto; max-height: 600px;">
+            <n-data-table
+            :columns="searchResultColumns"
+            :data="highlightedSearchResults"
+            :scroll-x="1000"
+            :scroll-y="500"
+            :row-class-name="getRowClassName"
+          />
+          </div>
+        </n-spin>
       </div>
-    </n-spin>
-  </div>
 
       <!-- 未打开文件时的提示 -->
       <n-empty class="h-screen mt-15%" v-show="tabsCount === 0" description="暂未打开文件">
@@ -236,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, h } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
 import { FileTray, Settings, Code, Search } from "@vicons/ionicons5"; // 引入图标
@@ -268,36 +268,80 @@ const searchKey = ref("");
 const displayedSearchKey = ref("");
 const searchResults = ref([]);
 const isLoading = ref(false);
+const highlightedRows = ref([]); // 存储被点击过的行的索引或唯一标识
 
 // 修改表格列定义，添加操作按钮
-// 修改表格列定义，添加操作按钮
 const searchResultColumns = ref([
-{
+  {
     title: '操作',
     key: 'actions',
-    render(row) {
+    render(row, index) {
       return h(
         'div',
         { class: 'action-button-container' },
         [
-          h(
-            'n-button',
-            {
-              type: 'primary',
-              size: 'small',
-              class: 'jump-button',
-              onClick: () => handleJumpToDecompile(row)
+        h(
+          'n-button',
+          {
+            type: 'primary',
+            size: 'small',
+            class: 'jump-button',
+            onClick: () => handleJumpToDecompile(row, index),
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px', // 图标和文字之间的间距
+              padding: '6px 12px',
+              borderRadius: '4px', // 稍微圆润的边角
+              background: '#18a058', // 主色调（与创建项目按钮一致）
+              color: 'white', // 文字颜色
+              border: '1px solid #18a058', // 边框颜色
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // 阴影效果
+              transition: 'all 0.3s ease', // 平滑过渡效果
+              cursor: 'pointer', // 鼠标指针
             },
+            onMouseenter: (e) => {
+              e.target.style.background = '#36ad6a'; // 悬停时的背景色
+              e.target.style.borderColor = '#36ad6a'; // 悬停时的边框颜色
+              e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'; // 悬停时的阴影
+              e.target.style.transform = 'translateY(-1px)'; // 轻微上移效果
+            },
+            onMouseleave: (e) => {
+              e.target.style.background = '#18a058'; // 恢复默认背景色
+              e.target.style.borderColor = '#18a058'; // 恢复默认边框颜色
+              e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'; // 恢复默认阴影
+              e.target.style.transform = 'translateY(0)'; // 恢复原位
+            },
+            onMousedown: (e) => {
+              e.target.style.background = '#0c7a43'; // 点击时的背景色
+              e.target.style.borderColor = '#0c7a43'; // 点击时的边框颜色
+              e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'; // 点击时的阴影
+            },
+            onMouseup: (e) => {
+              e.target.style.background = '#36ad6a'; // 恢复悬停时的背景色
+              e.target.style.borderColor = '#36ad6a'; // 恢复悬停时的边框颜色
+              e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'; // 恢复悬停时的阴影
+            },
+          },
+          [
+            h('n-icon', { size: '16px' }, h(Code)), // 添加图标
             '跳转反编译'
-          )
+          ]
+        )
         ]
       );
     }
-  },{ title: '结果', key: 'result', render(row) {
-    return h('div', {
-      innerHTML: row.result
-    });
-  }}
+  },
+  { 
+    title: '结果', 
+    key: 'result', 
+    render(row) {
+      return h('div', {
+        innerHTML: row.result
+      });
+    }
+  }
 ]);
 
 // 高亮匹配的查询内容
@@ -309,6 +353,33 @@ const highlightedSearchResults = computed(() => {
     result: result.result.replace(regex, '<span style="color: red;">$1</span>')
   }));
 });
+
+// 动态设置行样式
+const getRowClassName = (row, index) => {
+  return highlightedRows.value.includes(index) ? 'highlighted-row' : '';
+};
+
+// 跳转反编译处理函数
+const handleJumpToDecompile = (row, index) => {
+  if (treeComponentRef.value && row) {
+    window.decompileclas(cleanedText(row.result));
+    activeTab.value = "tab1"; // 切换到 tab1
+
+    // 更新 highlightedRows 数组
+    if (!highlightedRows.value.includes(index)) {
+      highlightedRows.value.push(index);
+    }
+  } else {
+    console.error("TreeComponent 实例未找到或行数据无效");
+  }
+};
+
+const cleanedText = (data) => {
+  // 去除 <span style="color: red;"> 和 </span>
+  data = data.replace(/<span style="color: red;">/g, '');
+  data = data.replace(/<\/span>/g, '');
+  return data;
+};
 
 // 右键菜单相关状态
 const showContextMenu = ref(false);
@@ -335,7 +406,6 @@ const handleContextMenu = (e, row) => {
   document.addEventListener('click', handleGlobalClick);
 };
 
-
 // 全局点击事件处理函数
 const handleGlobalClick = (e) => {
   // 判断点击的位置是否在菜单之外
@@ -345,41 +415,6 @@ const handleGlobalClick = (e) => {
     document.removeEventListener('click', handleGlobalClick);
   }
 };
-
-
-// 跳转反编译处理函数
-const handleJumpToDecompile = (row) => {
-  if (treeComponentRef.value && row) {
-    window.decompileclas(cleanedText(row.result));
-    activeTab.value = "tab1"; // 切换到 tab1
-  } else {
-    console.error("TreeComponent 实例未找到或行数据无效");
-  }
-};
-
-const cleanedText = (data) => {
-      // 去除 <span style="color: red;"> 和 </span>
-      data = data.replace(/<span style="color: red;">/g, '');
-      data = data.replace(/<\/span>/g, '');
-      return data;
-};
-
-// // 跳转反编译处理函数
-// const handleJumpToDecompile = () => {
-//   if (treeComponentRef.value && selectedRow.value) {
-//     //treeComponentRef.value.decompileclass(selectedRow.value.result); // 传递当前行的内容
-//     window.decompileclas(selectedRow.value.result);
-//     activeTab.value = "tab1"; // 切换到 tab1
-//   } else {
-//     window.decompileclas(row.value.result);
-//     activeTab.value = "tab1"; // 切换到 tab1
-//     console.error("TreeComponent 实例未找到或行数据无效");
-//   }
-//   showContextMenu.value = false; // 关闭右键菜单
-//   // 移除全局点击事件监听器
-//   document.removeEventListener('click', handleGlobalClick);
-// };
-
 
 // 设置相关的状态
 const isSettingsModalOpen = ref(false);
@@ -748,30 +783,45 @@ const handleSettingsSubmit = async () => {
   background-color: #f0f0f0;
 }
 
-/* 操作按钮容器样式 */
-.action-button-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 /* 跳转按钮样式 */
 .jump-button {
-  background-color: #409eff; /* 蓝色背景 */
-  color: white; /* 白色文字 */
-  border: none; /* 去掉边框 */
-  border-radius: 4px; /* 圆角 */
+  background: #18a058; /* 主色调（与创建项目按钮一致） */
+  color: white; /* 文字颜色 */
+  border: 1px solid #18a058; /* 边框颜色 */
+  border-radius: 4px; /* 稍微圆润的边角 */
   padding: 6px 12px; /* 内边距 */
   font-size: 12px; /* 字体大小 */
   cursor: pointer; /* 鼠标指针 */
-  transition: background-color 0.3s ease; /* 背景色过渡效果 */
+  transition: all 0.3s ease; /* 平滑过渡效果 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* 图标和文字之间的间距 */
 }
 
 .jump-button:hover {
-  background-color: #66b1ff; /* 鼠标悬停时的背景色 */
+  background: #36ad6a; /* 悬停时的背景色 */
+  border-color: #36ad6a; /* 悬停时的边框颜色 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 悬停时的阴影 */
+  transform: translateY(-1px); /* 轻微上移效果 */
 }
 
 .jump-button:active {
-  background-color: #3a8ee6; /* 按钮按下时的背景色 */
+  background: #0c7a43; /* 点击时的背景色 */
+  border-color: #0c7a43; /* 点击时的边框颜色 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 点击时的阴影 */
+  transform: translateY(0); /* 恢复原位 */
+}
+
+/* 图标样式 */
+.n-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.highlighted-row {
+  background-color: red !important; /* 设置背景颜色为红色 */
 }
 </style>
