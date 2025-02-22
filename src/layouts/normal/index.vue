@@ -101,12 +101,12 @@
         <n-spin :show="isLoading">
           <div class="search-results-container" style="overflow: auto; max-height: 600px;">
             <n-data-table
-            :columns="searchResultColumns"
-            :data="highlightedSearchResults"
-            :scroll-x="1000"
-            :scroll-y="500"
-            :row-class-name="getRowClassName"
-          />
+              :columns="searchResultColumns"
+              :data="highlightedSearchResults"
+              :scroll-x="1000"
+              :scroll-y="500"
+              :row-class-name="getRowClassName"
+            />
           </div>
         </n-spin>
       </div>
@@ -239,12 +239,12 @@
 import { ref, computed, h } from "vue";
 import axios from "axios";
 import AppHeader from "./header/index.vue";
-import { FileTray, Settings, Code, Search } from "@vicons/ionicons5"; // 引入图标
+import { FileTray, Settings, Code, Search } from "@vicons/ionicons5";
 import SideBar from "./sidebar/index.vue";
 import { useTabStore } from "@/stores";
-import TreeComponent from "./sidebar/index.vue"; // 引入代码2的组件
+import TreeComponent from "./sidebar/index.vue";
 import CfgPage from "./header/CfgPage.vue";
-import AsmPage from "./header/asmpage.vue"; // 引入 asmpage.vue 组件
+import AsmPage from "./header/asmpage.vue";
 
 // State
 const sidebarWidth = ref(420);
@@ -254,10 +254,10 @@ const isLoadProjectModalOpen = ref(false);
 const projectName = ref("");
 const isUploadModalOpen = ref(false);
 const selectedFile = ref(null);
-const projectOptions = ref([]); // 项目列表数据
-const selectedProject = ref(null); // 用户选择的项目
-const treeComponentRef = ref(null); // 代码2组件的引用
-const activeTab = ref("tab1"); // 当前激活的选项卡
+const projectOptions = ref([]);
+const selectedProject = ref(null);
+const treeComponentRef = ref(null);
+const activeTab = ref("tab1");
 const isHelpModalOpen = ref(false);
 const isjshandleDecompile = ref(false);
 const versionInfo = ref(null);
@@ -268,7 +268,6 @@ const searchKey = ref("");
 const displayedSearchKey = ref("");
 const searchResults = ref([]);
 const isLoading = ref(false);
-const highlightedRows = ref([]); // 存储被点击过的行的索引或唯一标识
 
 // 修改表格列定义，添加操作按钮
 const searchResultColumns = ref([
@@ -280,55 +279,41 @@ const searchResultColumns = ref([
         'div',
         { class: 'action-button-container' },
         [
-        h(
-          'n-button',
-          {
-            type: 'primary',
-            size: 'small',
-            class: 'jump-button',
-            onClick: () => handleJumpToDecompile(row, index),
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px', // 图标和文字之间的间距
-              padding: '6px 12px',
-              borderRadius: '4px', // 稍微圆润的边角
-              background: '#18a058', // 主色调（与创建项目按钮一致）
-              color: 'white', // 文字颜色
-              border: '1px solid #18a058', // 边框颜色
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // 阴影效果
-              transition: 'all 0.3s ease', // 平滑过渡效果
-              cursor: 'pointer', // 鼠标指针
+          h(
+            'n-button',
+            {
+              type: 'primary',
+              size: 'small',
+              class: ['jump-button', { 'highlighted-button': row.isClicked }],
+              onClick: () => handleJumpToDecompile(row, index),
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                background: row.isClicked ? '#e6f7e6' : '#18a058',
+                color: 'white',
+                border: `1px solid ${row.isClicked ? '#e6f7e6' : '#18a058'}`,
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+              },
+              onMouseenter: (e) => {
+                e.target.style.background = row.isClicked ? '#e6f7e6' : '#36ad6a';
+                e.target.style.borderColor = row.isClicked ? '#e6f7e6' : '#36ad6a';
+              },
+              onMouseleave: (e) => {
+                e.target.style.background = row.isClicked ? '#e6f7e6' : '#18a058';
+                e.target.style.borderColor = row.isClicked ? '#e6f7e6' : '#18a058';
+              },
             },
-            onMouseenter: (e) => {
-              e.target.style.background = '#36ad6a'; // 悬停时的背景色
-              e.target.style.borderColor = '#36ad6a'; // 悬停时的边框颜色
-              e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'; // 悬停时的阴影
-              e.target.style.transform = 'translateY(-1px)'; // 轻微上移效果
-            },
-            onMouseleave: (e) => {
-              e.target.style.background = '#18a058'; // 恢复默认背景色
-              e.target.style.borderColor = '#18a058'; // 恢复默认边框颜色
-              e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'; // 恢复默认阴影
-              e.target.style.transform = 'translateY(0)'; // 恢复原位
-            },
-            onMousedown: (e) => {
-              e.target.style.background = '#0c7a43'; // 点击时的背景色
-              e.target.style.borderColor = '#0c7a43'; // 点击时的边框颜色
-              e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'; // 点击时的阴影
-            },
-            onMouseup: (e) => {
-              e.target.style.background = '#36ad6a'; // 恢复悬停时的背景色
-              e.target.style.borderColor = '#36ad6a'; // 恢复悬停时的边框颜色
-              e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'; // 恢复悬停时的阴影
-            },
-          },
-          [
-            h('n-icon', { size: '16px' }, h(Code)), // 添加图标
-            '跳转反编译'
-          ]
-        )
+            [
+              h('n-icon', { size: '16px' }, h(Code)),
+              '跳转反编译'
+            ]
+          )
         ]
       );
     }
@@ -347,35 +332,33 @@ const searchResultColumns = ref([
 // 高亮匹配的查询内容
 const highlightedSearchResults = computed(() => {
   const keyword = displayedSearchKey.value;
-  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // 转义特殊字符
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${escapedKeyword})`, 'gi');
   return searchResults.value.map(result => ({
+    ...result,
     result: result.result.replace(regex, '<span style="color: red;">$1</span>')
   }));
 });
 
 // 动态设置行样式
-const getRowClassName = (row, index) => {
-  return highlightedRows.value.includes(index) ? 'highlighted-row' : '';
+const getRowClassName = (row) => {
+  return row.isClicked ? 'highlighted-row' : '';
 };
 
 // 跳转反编译处理函数
 const handleJumpToDecompile = (row, index) => {
   if (treeComponentRef.value && row) {
     window.decompileclas(cleanedText(row.result));
-    activeTab.value = "tab1"; // 切换到 tab1
+    activeTab.value = "tab1";
 
-    // 更新 highlightedRows 数组
-    if (!highlightedRows.value.includes(index)) {
-      highlightedRows.value.push(index);
-    }
+    // 更新 isClicked 属性
+    searchResults.value[index].isClicked = true;
   } else {
     console.error("TreeComponent 实例未找到或行数据无效");
   }
 };
 
 const cleanedText = (data) => {
-  // 去除 <span style="color: red;"> 和 </span>
   data = data.replace(/<span style="color: red;">/g, '');
   data = data.replace(/<\/span>/g, '');
   return data;
@@ -619,7 +602,10 @@ const handleSearch = async () => {
     // 模拟加载动画持续时间
     await new Promise(resolve => setTimeout(resolve, duration));
 
-    searchResults.value = response.data.map(result => ({ result: result })); // 假设返回的数据结构是数组，每个元素包含一个 result 字段
+    searchResults.value = response.data.map(result => ({ 
+      result: result, 
+      isClicked: false // 初始化为 false
+    }));
     displayedSearchKey.value = searchKey.value; // 保存查询内容
     activeTab.value = "tab4"; // 切换到搜索结果选项卡
     closeSearchModal();
@@ -667,12 +653,6 @@ const closeSettingsModal = () => {
 };
 
 const handleSettingsSubmit = async () => {
-  
-  // if (!AIServer.value || !AIKey.value || !AIModule.value) {
-  //   alert("请填写所有字段！");
-  //   return;
-  // }
-
   const configData = {
     AIServer: AIServer.value,
     AIKey: AIKey.value,
@@ -697,6 +677,38 @@ const handleSettingsSubmit = async () => {
 </script>
 
 <style scoped>
+/* 新增样式 */
+.search-query-display {
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* 新增样式 */
+.search-results-container {
+  height: calc(100% - 80px); /* 调整为 80px 以确保有足够的空间 */
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: auto; /* 水平滚动 */
+  padding: 16px; /* 添加一些内边距 */
+  box-sizing: border-box; /* 确保内边距和边框包含在宽度和高度内 */
+}
+
+/* 确保表格内容能够正确滚动 */
+.n-data-table {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box; /* 确保内边距和边框包含在宽度和高度内 */
+}
+
+/* 加载动画样式 */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
 
 /* 新增样式 */
 .search-query-display {
@@ -822,6 +834,11 @@ const handleSettingsSubmit = async () => {
 }
 
 .highlighted-row {
-  background-color: red !important; /* 设置背景颜色为红色 */
+  background-color: #e6f7e6 !important; /* 浅绿色背景 */
+}
+
+.highlighted-button {
+  background-color: #e6f7e6 !important; /* 浅绿色背景 */
+  border-color: #e6f7e6 !important; /* 浅绿色边框 */
 }
 </style>
